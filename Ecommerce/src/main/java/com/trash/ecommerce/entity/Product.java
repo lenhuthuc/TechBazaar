@@ -1,0 +1,89 @@
+package com.trash.ecommerce.entity;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.*;
+
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Table(name = "product")
+public class Product {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
+    @Column(name = "id")
+    private Long id;
+
+    @Column(nullable = false, length = 500)
+    private String productName;
+
+    @Column(name = "price",nullable = false, precision = 12, scale = 2)
+    private BigDecimal price;
+
+    @Column(length = 255)
+    private String category;
+
+    @Column(length = 1000)
+    private String image;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "rating_count")
+    private Integer ratingCount = 0;
+
+    @Column(name = "rating", precision = 3, scale = 1)
+    private BigDecimal rating = BigDecimal.ZERO;
+
+    @Column(name = "quantity", nullable = false)
+    private Long quantity = 100L;
+
+    @OneToMany(
+    fetch = FetchType.LAZY,
+    cascade = CascadeType.ALL,   
+    mappedBy = "product")
+    private Set<CartItem> cartItems = new HashSet<>();
+
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        cascade = CascadeType.ALL,
+        mappedBy = "product"
+    )
+    private Set<InvoiceItem> invoiceItems = new HashSet<>();
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "product",
+        cascade = CascadeType.ALL
+    )
+    private List<Review> reviews = new ArrayList<>();
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        cascade = CascadeType.ALL,
+        mappedBy = "product"
+    )
+    private Set<OrderItem> orderItems = new HashSet<>();
+
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        cascade = CascadeType.ALL,
+        mappedBy = "product"
+    )
+    private Set<UserInteractions> userInteractions = new HashSet<>();
+}

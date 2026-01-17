@@ -1,0 +1,94 @@
+package com.trash.ecommerce.service;
+
+import com.trash.ecommerce.dto.InvoiceResponse;
+import com.trash.ecommerce.entity.*;
+import com.trash.ecommerce.exception.FindingUserError;
+import com.trash.ecommerce.exception.InvoiceNotFoundException;
+import com.trash.ecommerce.exception.OrderExistsException;
+import com.trash.ecommerce.exception.PaymentException;
+import com.trash.ecommerce.mapper.InvoiceMapper;
+import com.trash.ecommerce.repository.InvoiceRepository;
+import com.trash.ecommerce.repository.OrderRepository;
+import com.trash.ecommerce.repository.PaymentMethodRepository;
+import com.trash.ecommerce.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
+@Service
+public class InvoiceServiceImpl implements InvoiceService {
+    @Autowired
+    private InvoiceRepository invoiceRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private InvoiceItemService invoiceItemService;
+    @Autowired
+    private PaymentMethodRepository paymentMethodRepository;
+    @Autowired
+    private InvoiceMapper invoiceMapper;
+
+    @Override
+    @Transactional
+    public InvoiceResponse createInvoice(Long userId, Long orderId, Long paymentMethodId) {
+        Users users = userRepository.findById(userId)
+                .orElseThrow(() -> new FindingUserError("user is not found"));
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderExistsException("Order not found"));
+        PaymentMethod paymentMethod = paymentMethodRepository.findById(paymentMethodId)
+                .orElseThrow(() -> new PaymentException("Payment method not found"));
+        
+        if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+            throw new OrderExistsException("Order has no items");
+        }
+        
+        Invoice invoice = new Invoice();
+        Set<InvoiceItem> invoiceItems = new HashSet<>();
+        BigDecimal totalPrice = BigDecimal.valueOf(0.0);
+        
+        for(OrderItem item : order.getOrderItems()) {
+            if (item == null) continue;
+            if (item.getId() == null) {
+                throw new OrderExistsException("Order item ID is null");
+            }
+            if (item.getPrice() == null || item.getQuantity() == null) {
+                throw new OrderExistsException("Order item price or quantity is null");
+            }
+            invoiceItems.add(invoiceItemService.makeInvoiceItem(item.getId(), invoice.getId()));
+            totalPrice = totalPrice.add(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+        }
+        
+        invoice.setOrder(order);
+        invoice.setPrice(totalPrice);
+        invoice.setCreatedAt(new Date());
+        invoice.setUser(users);
+        invoice.setPaymentMethod(paymentMethod);
+        invoice.setInvoiceItems(invoiceItems);
+        invoiceRepository.save(invoice);
+        return invoiceMapper.MapToDTO(invoice);
+    }
+
+    @Override
+    @Transactional
+    public void deleteInvoice(Long userId, Long invoiceId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new FindingUserError("User not found with id: " + userId));
+
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new InvoiceNotFoundException("Invoice not found with id: " + invoiceId));
+
+        if (!invoice.getUser().getId().equals(userId)) {
+            throw new InvoiceNotFoundException("Invoice not found for this user");
+        }
+        invoiceRepository.delete(invoice);
+    }
+
+
+}
