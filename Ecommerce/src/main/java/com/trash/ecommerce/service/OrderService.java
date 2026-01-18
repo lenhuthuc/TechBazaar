@@ -3,10 +3,8 @@ package com.trash.ecommerce.service;
 import com.trash.ecommerce.dto.OrderMessageResponseDTO;
 import com.trash.ecommerce.dto.OrderResponseDTO;
 import com.trash.ecommerce.dto.OrderSummaryDTO;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
-import java.util.Map;
 
 public interface OrderService {
     public List<OrderSummaryDTO> getAllMyOrders(Long userId, String IpAddress);

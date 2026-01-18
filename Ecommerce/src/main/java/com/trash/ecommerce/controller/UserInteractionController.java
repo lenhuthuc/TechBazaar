@@ -44,15 +44,11 @@ public class UserInteractionController {
         try {
             Long userId = jwtService.extractId(token);
             userInteractionService.recordInteraction(userId, productId);
-            return ResponseEntity.ok().body(new Object() {
-                public String message = "Interaction recorded successfully";
-            });
+            return ResponseEntity.ok(java.util.Map.of("message", "Interaction recorded successfully"));
         } catch (Exception e) {
             logger.error("Error recording interaction", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new Object() {
-                    public String message = "Error recording interaction: " + e.getMessage();
-                });
+                .body(java.util.Map.of("message", "Error recording interaction: " + e.getMessage()));
         }
     }
     
@@ -85,10 +81,10 @@ public class UserInteractionController {
     ) {
         try {
             var interactions = userInteractionService.getProductInteractions(productId);
-            return ResponseEntity.ok().body(new Object() {
-                public int count = interactions.size();
-                public Object data = interactions;
-            });
+            return ResponseEntity.ok(java.util.Map.of(
+                "count", interactions.size(),
+                "data", interactions
+            ));
         } catch (Exception e) {
             logger.error("Error fetching product interactions", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

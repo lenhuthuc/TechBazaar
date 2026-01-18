@@ -61,7 +61,9 @@ public class InvoiceServiceImpl implements InvoiceService {
             if (item.getPrice() == null || item.getQuantity() == null) {
                 throw new OrderExistsException("Order item price or quantity is null");
             }
-            invoiceItems.add(invoiceItemService.makeInvoiceItem(item.getId(), invoice.getId()));
+            InvoiceItem invoiceItem = invoiceItemService.createFromOrderItem(item);
+            invoiceItem.setInvoice(invoice);
+            invoiceItems.add(invoiceItem);
             totalPrice = totalPrice.add(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
         }
         
@@ -78,7 +80,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     @Transactional
     public void deleteInvoice(Long userId, Long invoiceId) {
-        Users user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new FindingUserError("User not found with id: " + userId));
 
         Invoice invoice = invoiceRepository.findById(invoiceId)

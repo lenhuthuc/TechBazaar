@@ -69,13 +69,6 @@ public class ProductController {
         }
     }
 
-    /**
-     * Get recommended products similar to a given product
-     * Uses content-based recommendation system
-     * 
-     * @param productId - The product to find recommendations for
-     * @return List of recommended product DTOs
-     */
     @GetMapping("/{id}/recommendations")
     public ResponseEntity<List<ProductDetailsResponseDTO>> getProductRecommendations(
         @PathVariable("id") Long productId

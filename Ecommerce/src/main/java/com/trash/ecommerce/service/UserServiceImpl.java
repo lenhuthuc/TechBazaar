@@ -219,28 +219,32 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean verifyDTO(String email, String OTP) {
+    public boolean verifyOTP(String email, String OTP) {
         String key = "otp:" + email;
         String storeOtp = (String) redisTemplate.opsForValue().get(key);
         if (storeOtp == null) return false;
-        boolean valid = storeOtp.equals(OTP);
-        if(valid) redisTemplate.delete(key);
-        return valid;
+        return storeOtp.equals(OTP);
     }
 
     @Override
-    public UserResponseDTO changePassword(String email, String newPassword) {
+    public UserResponseDTO changePassword(String email, String newPassword, String otp) {
         if (email == null || email.isEmpty()) {
             throw new IllegalArgumentException("Email is required");
         }
         if (newPassword == null || newPassword.isEmpty()) {
             throw new IllegalArgumentException("New password is required");
         }
+        String key = "otp:" + email;
+        String storeOtp = (String) redisTemplate.opsForValue().get(key);
+        if (storeOtp == null || !storeOtp.equals(otp)) {
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
         Users user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User is not found"));
         newPassword = en.encode(newPassword);
         user.setPassword(newPassword);
         userRepository.save(user);
+        redisTemplate.delete(key);
         return new UserResponseDTO("Change password successfully");
     }
 

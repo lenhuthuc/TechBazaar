@@ -2,13 +2,11 @@ package com.trash.ecommerce.mapper;
 
 import com.trash.ecommerce.dto.ProductDetailsResponseDTO;
 import com.trash.ecommerce.entity.Product;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ProductMapper {
-    @Autowired
-    private ReviewsMapper mapper;
+
     public ProductDetailsResponseDTO mapperProduct(Product product) {
         ProductDetailsResponseDTO productDTO = new ProductDetailsResponseDTO();
         productDTO.setId(product.getId());

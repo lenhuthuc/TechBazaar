@@ -2,8 +2,6 @@ package com.trash.ecommerce.service;
 
 import com.trash.ecommerce.dto.ReviewRequest;
 import com.trash.ecommerce.dto.ReviewResponse;
-import com.trash.ecommerce.entity.Review;
-import com.trash.ecommerce.repository.ReviewRepository;
 
 import java.util.List;
 

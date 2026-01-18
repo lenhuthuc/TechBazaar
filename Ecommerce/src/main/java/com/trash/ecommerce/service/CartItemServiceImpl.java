@@ -13,7 +13,6 @@ import com.trash.ecommerce.entity.Product;
 import com.trash.ecommerce.entity.Users;
 import com.trash.ecommerce.exception.FindingUserError;
 import com.trash.ecommerce.exception.ProductFingdingException;
-import com.trash.ecommerce.exception.ResourceNotFoundException;
 import com.trash.ecommerce.repository.CartItemRepository;
 import com.trash.ecommerce.repository.ProductRepository;
 import com.trash.ecommerce.repository.UserRepository;
@@ -23,8 +22,6 @@ import jakarta.transaction.Transactional;
 @Service
 public class CartItemServiceImpl implements CartItemService {
 
-    @Autowired
-    private JwtService jwtService;
     @Autowired
     private CartItemRepository cartItemRepository;
     @Autowired

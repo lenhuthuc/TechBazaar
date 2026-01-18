@@ -18,8 +18,6 @@ import com.trash.ecommerce.repository.UserRepository;
 public class CartServiceImpl implements CartService {
 
     @Autowired
-    private JwtService jwtService;
-    @Autowired
     private UserRepository userRepository;
     @Override
     public List<CartItemDetailsResponseDTO> getAllItemFromMyCart(Long userId) {

@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -59,10 +60,10 @@ public class PaymentController {
     }
 
     @GetMapping("/vnpay/ipn")
-    public ResponseEntity<PaymentMethodResponse> handleVnPayIPN(
+    public ResponseEntity<Map<String, String>> handleVnPayIPN(
             HttpServletRequest request) {
         try {
-            PaymentMethodResponse response = paymentService.handleProcedurePayment(request);
+            Map<String, String> response = paymentService.handleProcedurePayment(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("handleVnPayIPN has errors", e);
@@ -75,7 +76,6 @@ public class PaymentController {
             HttpServletRequest request,
             @RequestHeader(value = "Authorization", required = false) String token) {
         try {
-            Long userId =  jwtService.extractId(token);
             PaymentMethodMessageResponse response = paymentService.handleProcedureUserInterface(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {

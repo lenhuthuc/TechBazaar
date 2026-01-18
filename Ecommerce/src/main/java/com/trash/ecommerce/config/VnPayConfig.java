@@ -1,26 +1,15 @@
 package com.trash.ecommerce.config;
 
-
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-@Component
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
+@Configuration
+@ConfigurationProperties(prefix = "vnpay") 
+@Data 
 public class VnPayConfig {
-    @Value("${vnpay.tmnCode}")
-    private String tmnCode;
-
-    @Value("${vnpay.hashSecret}")
-    private String hashSecret;
-
-    @Value("${vnpay.url}")
-    private String url;
-
-    @Value("${vnpay.ReturnUrl}")
-    private String returnUrl;
+    private String tmnCode;     
+    private String hashSecret;  
+    private String url;        
+    private String returnUrl; 
 }

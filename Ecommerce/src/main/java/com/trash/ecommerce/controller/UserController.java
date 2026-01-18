@@ -183,7 +183,7 @@ public class UserController {
             @RequestParam String otp
     ) {
         try {
-            boolean isValid = userService.verifyDTO(email, otp);
+            boolean isValid = userService.verifyOTP(email, otp);
             if (isValid) {
                 return ResponseEntity.ok(new UserResponseDTO("OTP verified successfully"));
             } else {
@@ -201,25 +201,18 @@ public class UserController {
     public ResponseEntity<UserResponseDTO> changePassword(
             @RequestParam String email,
             @RequestParam String newPassword,
-            @RequestParam(required = false) String otp
+            @RequestParam String otp
     ) {
         try {
-            // Verify OTP before changing password
-            if (otp != null && !otp.isEmpty()) {
-                boolean isValid = userService.verifyDTO(email, otp);
-                if (!isValid) {
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                            .body(new UserResponseDTO("Invalid or expired OTP"));
-                }
-            }
-            
-            UserResponseDTO response = userService.changePassword(email, newPassword);
+            UserResponseDTO response = userService.changePassword(email, newPassword, otp);
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new UserResponseDTO(e.getMessage()));
         } catch (Exception e) {
             logger.error("Change password failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new UserResponseDTO(e.getMessage()));
+                    .body(new UserResponseDTO("An error occurred"));
         }
     }
-
 }

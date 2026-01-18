@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { productAPI, cartAPI, reviewAPI, userInteractionAPI } from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
-import { getProductImageUrl } from '@/lib/imageHelper';
+import { getProductImageUrl, resolveImageUrl } from '@/lib/imageHelper';
 import ProductCard from '@/components/ProductCard';
 
 interface Product {
@@ -15,6 +15,9 @@ interface Product {
   quantity: number;
   description?: string;
   categoryName?: string;
+  image?: string;
+  rating?: number;
+  ratingCount?: number;
 }
 
 interface Review {
@@ -50,6 +53,7 @@ export default function ProductDetailPage() {
   const [addToCartLoading, setAddToCartLoading] = useState<boolean>(false);
   const [submitReviewLoading, setSubmitReviewLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [imageError, setImageError] = useState<boolean>(false);
   const [recommendations, setRecommendations] = useState<ProductDetailsResponseDTO[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState<boolean>(false);
 
@@ -169,6 +173,33 @@ export default function ProductDetailPage() {
     }).format(Number(price));
   };
 
+  const getImageSrc = (): string => {
+    // Try product.image field first with smart URL resolution
+    if (product && product.image && !imageError) {
+      return resolveImageUrl(product.image, '/placeholder-product.png');
+    }
+    // Fall back to dedicated endpoint
+    return product ? getProductImageUrl(product.id, '/placeholder-product.png') : '/placeholder-product.png';
+  };
+
+  const handleImageError = () => {
+    setImageError(true); // Fall back to endpoint on next render
+  };
+
+  const renderRating = () => {
+    if (!product || !product.rating || product.rating === 0) return null;
+    return (
+      <div className="flex items-center gap-1 mt-2">
+        <span className="text-yellow-500 text-sm font-semibold">
+          ★ {product.rating.toFixed(1)}
+        </span>
+        {product.ratingCount && (
+          <span className="text-gray-500 text-xs">({product.ratingCount})</span>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -200,12 +231,10 @@ export default function ProductDetailPage() {
         {/* Image */}
         <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
           <img
-            src={getProductImageUrl(product.id)}
+            src={getImageSrc()}
             alt={product.product_name}
             className="w-full h-96 object-cover"
-            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-              e.currentTarget.src = '/placeholder-product.png';
-            }}
+            onError={handleImageError}
           />
         </div>
 
@@ -216,8 +245,9 @@ export default function ProductDetailPage() {
               ← Quay lại
             </Link>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">{product.product_name}</h1>
+            {renderRating()}
             {product.categoryName && (
-              <span className="inline-block px-4 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
+              <span className="inline-block mt-4 px-4 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
                 {product.categoryName}
               </span>
             )}

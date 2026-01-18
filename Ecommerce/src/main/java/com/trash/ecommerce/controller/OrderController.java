@@ -63,7 +63,7 @@ public class OrderController {
     @PostMapping("/create")
     public ResponseEntity<OrderResponseDTO> createOrder(
             @RequestHeader("Authorization") String token,
-            @RequestParam("paymentMethod") Long paymentMethodId,
+            @RequestParam(value = "paymentMethod", defaultValue = "1") Long paymentMethodId,
             HttpServletRequest request) {
         try {
             Long userId = jwtService.extractId(token);

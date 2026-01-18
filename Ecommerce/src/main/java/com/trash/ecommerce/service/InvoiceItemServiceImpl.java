@@ -14,34 +14,34 @@ import java.util.List;
 @Service
 public class InvoiceItemServiceImpl implements InvoiceItemService {
     @Autowired
-    private OrderRepository orderRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
+
     private OrderItemRepository orderItemRepository;
     @Autowired
     private InvoiceRepository invoiceRepository;
     @Autowired
     private InvoiceItemRepository invoiceItemRepository;
     @Override
-    public InvoiceItem makeInvoiceItem(Long orderItemId, Long invoiceId) {
-        OrderItem orderItem = orderItemRepository.findById(orderItemId)
-                .orElseThrow(() -> new OrderExistsException("Order item not found"));
-        Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new InvoiceException("Invoice not found"));
-        
+    public InvoiceItem createFromOrderItem(OrderItem orderItem) {
+
+        if (orderItem == null) {
+            throw new OrderExistsException("Order item is null");
+        }
+
         if (orderItem.getProduct() == null) {
             throw new OrderExistsException("Product not found in order item");
         }
-        
+
         InvoiceItem invoiceItem = new InvoiceItem();
-        InvoiceItemId id = new InvoiceItemId(invoiceId, orderItem.getProduct().getId());
-        invoiceItem.setId(id);
-        invoiceItem.setInvoice(invoice);
-        invoiceItem.setProduct(orderItem.getProduct()); // Gán Product cho InvoiceItem
+
+        invoiceItem.setProduct(orderItem.getProduct());
         invoiceItem.setPrice(orderItem.getPrice());
         invoiceItem.setQuantity(orderItem.getQuantity());
-        invoiceItem.setTotal(orderItem.getPrice().multiply(BigDecimal.valueOf(orderItem.getQuantity())));
+        invoiceItem.setTotal(
+                orderItem.getPrice().multiply(
+                        BigDecimal.valueOf(orderItem.getQuantity())
+                )
+        );
+
         return invoiceItem;
     }
 

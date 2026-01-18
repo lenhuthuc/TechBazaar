@@ -28,8 +28,6 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
-    private OrderItemRepository orderItemRepository;
-    @Autowired
     private PaymentMethodRepository paymentMethodRepository;
     @Autowired
     private PaymentService paymentService;
@@ -41,21 +39,16 @@ public class OrderServiceImpl implements OrderService {
     private ProductRepository productRepository;
     @Autowired
     private InvoiceService invoiceService;
-    @Autowired
-    private CartItemService cartItemService;
-    @Autowired
-    private EmailService emailService;
     
-    public OrderServiceImpl(UserRepository userRepository, OrderRepository orderRepository, OrderItemRepository orderItemRepository, PaymentService paymentService, CartItemService cartItemService, EmailService emailService, InvoiceService invoiceService, PaymentMethodRepository paymentMethodRepository, CartRepository cartRepository) {
+    public OrderServiceImpl(UserRepository userRepository, OrderRepository orderRepository, PaymentService paymentService, InvoiceService invoiceService, PaymentMethodRepository paymentMethodRepository, CartRepository cartRepository, OrderMapper orderMapper, ProductRepository productRepository) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
         this.paymentMethodRepository = paymentMethodRepository;
         this.cartRepository = cartRepository;
         this.paymentService = paymentService;
-        this.cartItemService = cartItemService;
-        this.emailService = emailService;
         this.invoiceService = invoiceService;
+        this.orderMapper = orderMapper;
+        this.productRepository = productRepository;
     }
 
     @Override
@@ -67,11 +60,11 @@ public class OrderServiceImpl implements OrderService {
         List<Order> orders = orderRepository.findByUserIdOrderByCreateAtDesc(userId);
         
         if (orders == null || orders.isEmpty()) {
-            return List.of(); // Trả về empty list nếu không có order
+            return List.of(); 
         }
 
         return orders.stream()
-                .filter(order -> order != null) // Filter null orders nếu có
+                .filter(order -> order != null) 
                 .map(order -> {
                     try {
                         String url = null;
@@ -84,12 +77,10 @@ public class OrderServiceImpl implements OrderService {
                         }
                         return orderMapper.toOrderSummaryDTO(order, url);
                     } catch (Exception e) {
-                        // Log error và trả về DTO với thông tin cơ bản
-                        // Nếu có lỗi parse enum hoặc lazy loading, vẫn trả về được
                         return orderMapper.toOrderSummaryDTO(order, null);
                     }
                 })
-                .filter(dto -> dto != null) // Filter null DTOs
+                .filter(dto -> dto != null) 
                 .collect(Collectors.toList());
     }
 
@@ -133,7 +124,7 @@ public class OrderServiceImpl implements OrderService {
         if (address == null || address.trim().isEmpty()) {
             throw new OrderValidException("User address is required to create an order");
         }
-        // 2. Khởi tạo Order
+        
         Order order = new Order();
         order.setCreateAt(new Date());
         order.setUser(user);
@@ -165,9 +156,7 @@ public class OrderServiceImpl implements OrderService {
             if (product.getQuantity() == null || product.getQuantity() < quantityBuy) {
                 throw new ProductQuantityValidation("Product " + product.getProductName() + " is out of stock!");
             }
-            // KHÔNG giảm stock ở đây, chỉ giảm khi thanh toán thành công
-            // Stock sẽ được giảm trong PaymentService khi payment thành công
-
+            
             BigDecimal currentPrice = product.getPrice();
             BigDecimal lineAmount = currentPrice.multiply(BigDecimal.valueOf(quantityBuy));
             totalPrice = totalPrice.add(lineAmount);
@@ -193,8 +182,6 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(order);
 
-        // Nếu là COD (payment method ID = 1), giảm stock ngay lập tức
-        // Nếu là online payment (ID = 2), sẽ giảm stock khi thanh toán thành công trong PaymentService
         if (paymentMethod.getId() == 1L) {
             for (OrderItem orderItem : orderItems) {
                 if (orderItem == null || orderItem.getProduct() == null) {
@@ -210,12 +197,12 @@ public class OrderServiceImpl implements OrderService {
                     throw new ProductQuantityValidation("Hết hàng hoặc số lượng không đủ cho sản phẩm: " + product.getProductName());
                 }
             }
-            // Tạo invoice ngay cho COD
+           
             try {
                 invoiceService.createInvoice(userId, order.getId(), paymentMethodId);
             } catch (Exception e) {
-                // Log error nhưng không throw để order vẫn được tạo thành công
-                // Invoice có thể tạo sau
+                System.out.println(e.getMessage());
+                throw new RuntimeException("Hóa đơn bị lỗi");
             }
         }
 

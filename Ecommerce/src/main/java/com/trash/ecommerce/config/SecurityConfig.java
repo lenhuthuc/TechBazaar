@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/reviews/**").authenticated()
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/user/**").hasAuthority("USER")
+                        .requestMatchers("/api/payments/vnpay/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(login -> login.disable())

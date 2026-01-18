@@ -35,21 +35,25 @@ public class PaymentServiceImpl implements PaymentService {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
-    private CartItemService cartItemService;
-    @Autowired
     private EmailService emailService;
     @Autowired
     private InvoiceService invoiceService;
+    private Map<String, String> vnpayResponse(String code, String message) {
+    return Map.of(
+        "RspCode", code,
+        "Message", message
+    );}
+
 
     @Override
     public PaymentMethodMessageResponse addPaymentMethod(Long userId, String name) {
-        Users user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         PaymentMethod paymentMethod = new PaymentMethod();
         paymentMethod.setMethodName(name);
 
-        PaymentMethod saved = paymentMethodRepository.save(paymentMethod);
+        paymentMethodRepository.save(paymentMethod);
 
         return new PaymentMethodMessageResponse("success");
     }
@@ -58,7 +62,7 @@ public class PaymentServiceImpl implements PaymentService {
     public String createPaymentUrl(BigDecimal total_price, String orderInfo, Long orderId, String ipAddress) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderExistsException("Order not found"));
-        String vnp_Version = "2.1.0";
+            String vnp_Version = "2.1.0";
             String vnp_Command = "pay";
             String vnp_OrderInfo = orderInfo;
             String orderType = "100000";
@@ -122,19 +126,16 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Map<String, String> hashFields(HttpServletRequest request) {
-        Map<String, String> fields = new HashMap<>();
+        Map<String, String> fields = new TreeMap<>();
         Iterator<String> params = request.getParameterNames().asIterator();
         while (params.hasNext()) {
             String fieldName = params.next();
             String fieldValue = request.getParameter(fieldName);
-            fieldName = URLEncoder.encode(fieldName, StandardCharsets.UTF_8);
-            fieldValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8);
             if ((fieldValue != null) && (!fieldValue.isEmpty())) {
                 fields.put(fieldName, fieldValue);
             }
         }
 
-        String vnp_SecureHash = request.getParameter("vnp_SecureHash");
         fields.remove("vnp_SecureHashType");
         fields.remove("vnp_SecureHash");
         return fields;
@@ -158,7 +159,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public PaymentMethodResponse handleProcedurePayment(HttpServletRequest request) {
+    public Map<String, String> handleProcedurePayment(HttpServletRequest request) {
         Map<String, String> fields = hashFields(request);
         String vnp_SecureHash = request.getParameter("vnp_SecureHash");
         String signValue = paymentHashGenerator.hashAllFields(fields);
@@ -167,26 +168,26 @@ public class PaymentServiceImpl implements PaymentService {
 
             String txnRef = fields.get("vnp_TxnRef");
             if (txnRef == null || txnRef.isEmpty()) {
-                return new PaymentMethodResponse("03", "Invalid transaction reference");
+                return vnpayResponse("03", "Invalid transaction reference");
             }
             
             Order order = orderRepository.findById(Long.valueOf(txnRef))
                     .orElseThrow(() -> new OrderExistsException("Order not found"));
             
             if (order.getUser() == null) {
-                return new PaymentMethodResponse("05", "Order user not found");
+                return vnpayResponse("05", "Order user not found");
             }
             
             Long orderId = order.getId();
             String vnpAmountStr = fields.get("vnp_Amount");
             if (vnpAmountStr == null || vnpAmountStr.isEmpty()) {
-                return new PaymentMethodResponse("06", "Invalid amount");
+                return vnpayResponse("06", "Invalid amount");
             }
             
             long vnpAmountLong = Long.parseLong(vnpAmountStr);
             BigDecimal vnpAmount = BigDecimal.valueOf(vnpAmountLong).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
             if (order.getTotalPrice() == null) {
-                return new PaymentMethodResponse("07", "Order total price is null");
+                return vnpayResponse("07", "Order total price is null");
             }
             // So sánh BigDecimal bằng compareTo để tránh vấn đề precision
             boolean checkAmount = order.getTotalPrice().compareTo(vnpAmount) == 0;
@@ -252,26 +253,26 @@ public class PaymentServiceImpl implements PaymentService {
                         {
                             throw new PaymentException("Transaction has not been successful");
                         }
-                        return new PaymentMethodResponse("01","Confirm Success");
+                        return vnpayResponse("01","Confirm Success");
                     }
                     else
                     {
-                        return new PaymentMethodResponse("02","Order already confirmed");
+                        return vnpayResponse("02","Order already confirmed");
                     }
                 }
                 else
                 {
-                    return new PaymentMethodResponse("04","Invalid Amount");
+                    return vnpayResponse("04","Invalid Amount");
                 }
             }
             else
             {
-                return new PaymentMethodResponse("01","Order not Found");
+                return vnpayResponse("01","Order not Found");
             }
         }
         else
         {
-            return new PaymentMethodResponse("97","Invalid Checksum");
+            return vnpayResponse("97","Invalid Checksum");
         }
     }
 }
