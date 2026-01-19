@@ -95,7 +95,7 @@ public class UserServiceImpl implements UserService {
             if (authentication != null && authentication.isAuthenticated()) {
                 Users u = userRepository.findByEmail(user.getEmail())
                         .orElseThrow(() -> new RuntimeException("user is not found"));
-                Token token = jwtService.generateToken(user.getEmail(), u.getId());
+                Token token = jwtService.generateToken(u, u.getId());
                 Date expiration = null;
                 if (token.getRefresh() != null) {
                     Date extractedExpiration = jwtService.extractExpiration(token.getRefresh());

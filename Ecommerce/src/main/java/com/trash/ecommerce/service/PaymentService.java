@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 import com.trash.ecommerce.dto.PaymentMethodMessageResponse;
-import com.trash.ecommerce.dto.PaymentMethodResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
 public interface PaymentService {

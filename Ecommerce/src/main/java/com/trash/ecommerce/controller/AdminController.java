@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 @RestController
-@PreAuthorize("hasAuthority('ADMIN')")
 @RequestMapping("api/admin")
 public class AdminController {
 

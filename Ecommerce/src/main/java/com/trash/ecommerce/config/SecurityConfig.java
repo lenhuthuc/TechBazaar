@@ -19,6 +19,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.List;
 
 @Configuration
@@ -43,6 +45,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/user/**").hasAuthority("USER")
                         .requestMatchers("/api/payments/vnpay/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(exception -> exception
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+                    })
+                    .accessDeniedHandler((request, response, accessDeniedException) -> {
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
+                    })
                 )
                 .formLogin(login -> login.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

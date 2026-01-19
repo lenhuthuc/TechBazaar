@@ -40,14 +40,30 @@ export const parseJwt = (token: string): any => {
   }
 };
 
-export const getUserRole = (): string | null => {
+export const getUserRoles = (): string[] => {
   const token = getAccessToken();
-  if (!token) return null;
+  if (!token) return [];
   
   const decoded = parseJwt(token);
-  return decoded?.role || null;
+  if (!decoded) return [];
+
+  // Gom tất cả các khả năng tên key lại
+  const rawRole = decoded.role || decoded.roles || decoded.authorities;
+
+  // Nếu là mảng thì trả về nguyên mảng, nếu là chuỗi thì biến thành mảng
+  if (Array.isArray(rawRole)) {
+    return rawRole;
+  } else if (typeof rawRole === 'string') {
+    return [rawRole];
+  }
+  
+  return [];
 };
 
 export const isAdmin = (): boolean => {
-  return getUserRole() === 'ADMIN';
+  const roles = getUserRoles();
+  console.log("👮 Quyền hiện tại của User:", roles); // Log để check lần cuối
+  
+  // Chỉ cần CÓ chứa chữ ADMIN (hoặc ROLE_ADMIN) là cho qua
+  return roles.some(r => r === 'ADMIN' || r === 'ROLE_ADMIN');
 };

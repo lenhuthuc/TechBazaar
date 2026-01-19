@@ -2,7 +2,6 @@ package com.trash.ecommerce.service;
 
 import com.trash.ecommerce.dto.InvoiceItemResponse;
 import com.trash.ecommerce.entity.*;
-import com.trash.ecommerce.exception.InvoiceException;
 import com.trash.ecommerce.exception.OrderExistsException;
 import com.trash.ecommerce.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +12,6 @@ import java.util.List;
 
 @Service
 public class InvoiceItemServiceImpl implements InvoiceItemService {
-    @Autowired
-
-    private OrderItemRepository orderItemRepository;
-    @Autowired
-    private InvoiceRepository invoiceRepository;
     @Autowired
     private InvoiceItemRepository invoiceItemRepository;
     @Override

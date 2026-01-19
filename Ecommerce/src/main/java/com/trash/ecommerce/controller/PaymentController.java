@@ -1,7 +1,6 @@
 package com.trash.ecommerce.controller;
 
 import com.trash.ecommerce.dto.PaymentMethodMessageResponse;
-import com.trash.ecommerce.dto.PaymentMethodResponse;
 import com.trash.ecommerce.service.JwtService;
 import com.trash.ecommerce.service.PaymentService;
 import com.trash.ecommerce.service.UserService;

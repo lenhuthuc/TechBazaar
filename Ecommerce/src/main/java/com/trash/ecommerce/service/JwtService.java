@@ -4,9 +4,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -14,7 +16,9 @@ import javax.crypto.SecretKey;
 import com.trash.ecommerce.dto.Token;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService; // Thêm import này
 import org.springframework.stereotype.Service;
 
 import io.jsonwebtoken.Claims;
@@ -24,8 +28,16 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
     private String secretKey = "Banana";
+
+    // 1. XÓA dòng private UserDetails userDetails; (Nguy hiểm, gây lỗi Null và lỗi luồng)
+
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    // 2. Inject UserDetailsService để dùng trong hàm refreshToken
+    @Autowired
+    private UserDetailsService userDetailsService;
+
     public JwtService() {
         try {
             KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
@@ -34,18 +46,24 @@ public class JwtService {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-
     }
 
-    public Token generateToken(String email, Long id) {
+    public Token generateToken(UserDetails userDetails, Long id) {
         Map<String, Object> claims = new HashMap<>();
         Token token = new Token();
+        
         claims.put("id", id);
+        
+        List<String> roles = userDetails.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.toList());
+        claims.put("roles", roles);
+
         token.setAccess(
                 Jwts.builder()
                         .claims()
                         .add(claims)
-                        .subject(email)
+                        .subject(userDetails.getUsername()) // Lấy email từ userDetails
                         .issuedAt(new Date(System.currentTimeMillis()))
                         .expiration(new Date(System.currentTimeMillis() + 3 * 60 * 60 * 1000))
                         .and()
@@ -56,7 +74,7 @@ public class JwtService {
                 Jwts.builder()
                         .claims()
                         .add(claims)
-                        .subject(email)
+                        .subject(userDetails.getUsername())
                         .issuedAt(new Date(System.currentTimeMillis()))
                         .expiration(new Date(System.currentTimeMillis() + 3 * 60 * 60 * 1000))
                         .and()
@@ -147,7 +165,7 @@ public class JwtService {
             Date expiration = extractExpiration(token);
             return expiration != null && expiration.before(new Date());
         } catch (Exception e) {
-            return true; // Nếu không parse được, coi như đã hết hạn
+            return true; 
         }
     }
 
@@ -164,14 +182,13 @@ public class JwtService {
             return null;
         }
         
-        // Xử lý "Bearer " prefix trước khi extract
         String cleanToken = removeBearerPrefix(oldRefreshToken);
         if (cleanToken == null || cleanToken.trim().isEmpty()) {
             return null;
         }
         
         try {
-            Long userId = extractId(oldRefreshToken); // extractId sẽ tự xử lý prefix
+            Long userId = extractId(oldRefreshToken); 
             String storedToken = (String) redisTemplate.opsForValue().get("refresh:" + userId);
             
             if (storedToken == null || !storedToken.equals(cleanToken)) {
@@ -184,7 +201,13 @@ public class JwtService {
             
             redisTemplate.delete("refresh:" + userId);
             String username = extractUsername(storedToken);
-            Token token = generateToken(username, userId);
+
+            // 5. Load UserDetails từ DB để lấy quyền mới nhất
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+            // 6. Gọi generateToken với userDetails vừa load được
+            Token token = generateToken(userDetails, userId);
+
             String newRefreshToken = token.getRefresh();
             if (newRefreshToken != null) {
                 redisTemplate.opsForValue().set(
@@ -198,5 +221,4 @@ public class JwtService {
             return null;
         }
     }
-
 }
